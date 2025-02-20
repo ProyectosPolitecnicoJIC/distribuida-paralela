@@ -38,8 +38,8 @@
 
 - Aprendizaje de la libreria RMI.
 
-1. Peer to peer, arquitectura orientada a servicios (SOA), Enterprise Service Bus (ESB), MOM ó BPM. Seleccionar UNA de las anteriores arquitecturas y  realizar:
+2. Peer to peer, arquitectura orientada a servicios (SOA), Enterprise Service Bus (ESB), MOM ó BPM. Seleccionar UNA de las anteriores arquitecturas y  realizar:
     - Ventajas
     - Ejemplo
 
-2. Bibliografias
+3. Bibliografias
