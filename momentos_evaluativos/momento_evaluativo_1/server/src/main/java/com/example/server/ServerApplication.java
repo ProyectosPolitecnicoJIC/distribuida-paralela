@@ -18,8 +18,6 @@ public class ServerApplication {
 
 		System.out.println("Objeto remoto 'empresa' registrado correctamente.");
 
-		System.out.println("\n Servidor RMI iniciado y listo para recibir solicitudes.");
-
 		SpringApplication.run(ServerApplication.class, args);
 
 
