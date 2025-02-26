@@ -9,7 +9,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface IEmpresa extends Remote{
-    public void llenarMatrizSalarios(int numeroEmpleados) throws RemoteException;
+    public void llenarMatrizSalarios(int numeroEmpleados, int numeroMeses) throws RemoteException;
 
     public double[] totalPagadoEmpleado() throws RemoteException;
 
