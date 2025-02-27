@@ -1,8 +1,6 @@
-package com.example.implement;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import com.example.Interface.IEmpresa;
 import java.util.Random;
 public class EmpresaImpl extends UnicastRemoteObject  implements IEmpresa {
 
