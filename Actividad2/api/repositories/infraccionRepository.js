@@ -1,0 +1,39 @@
+import Infraccion from '../models/Infraccion.js';
+
+export default class InfraccionRepository{
+    constructor(dao){
+        this.dao = dao;
+    }
+
+    async getAll(){
+        return await this.dao.query('SELECT * FROM infraccion');
+    }
+
+    async getById(id){
+        const rows = await this.dao.query('SELECT * FROM infraccion WHERE id = ?', [id]);
+        if(rows.length === 0){
+            return null;
+        }
+        return new Infraccion(rows[0].fecha, rows[0].fuente);
+    }
+
+    async create(infraccion){
+        if(typeof infraccion != Infraccion){
+            throw new Error('Invalid argument. Expected Infraccion.');
+        }
+        return await this.dao.query('INSERT INTO infraccion (fecha, fuente) VALUES (?, ?)', 
+            [infraccion.fecha, infraccion.fuente]);
+    }
+
+    async update(infraccion){
+        if(typeof infraccion != Infraccion){
+            throw new Error('Invalid argument. Expected Infraccion.');
+        }
+        return await this.dao.query('UPDATE infraccion SET fecha = ?, fuente = ? WHERE id = ?', [fecha, fuente, id]);
+    }
+
+    async delete(id){
+        return await this.dao.query('DELETE FROM infraccion WHERE id = ?', [id]);
+    }
+
+}
