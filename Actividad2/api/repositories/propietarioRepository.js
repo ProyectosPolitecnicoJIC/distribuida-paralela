@@ -14,15 +14,15 @@ export default class PropietarioRepositoru {
         if(rows.length === 0){
             return null;
         }
-        return new Propietario(rows[0].nombre, rows[0].apellido);
+        return new Propietario(rows[0].identificacion, rows[0].nombre, rows[0].direccion);
     }
 
     async create(propietario){
         if(typeof propietario != Propietario){
             throw new Error('Invalid argument. Expected Propietario.');
         }
-        return await this.dao.query('INSERT INTO propietario (nombre, apellido) VALUES (?, ?)', 
-            [propietario.nombre, propietario.apellido]);
+        return await this.dao.query('INSERT INTO propietario (identificacion, nombre, direccion) VALUES (?, ?, ?)', 
+            [propietario.identificacion, propietario.nombre, propietario.direccion]);
     }
 
     async update(propietario){

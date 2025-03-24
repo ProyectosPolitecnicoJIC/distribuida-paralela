@@ -29,7 +29,7 @@ export default class InfraccionRepository{
         if(typeof infraccion != Infraccion){
             throw new Error('Invalid argument. Expected Infraccion.');
         }
-        return await this.dao.query('UPDATE infraccion SET fecha = ?, fuente = ? WHERE id = ?', [fecha, fuente, id]);
+        return await this.dao.query('UPDATE infraccion SET fecha = ?, fuente = ? WHERE id = ?', [infraccion.fecha, infraccion.fuente, infraccion.id]);
     }
 
     async delete(id){
