@@ -1,0 +1,221 @@
+{
+	"info": {
+		"_postman_id": "fee12b11-33b1-4ea7-83b5-16a417c8055c",
+		"name": "Actividad 2",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "22903412",
+		"_collection_link": "https://red-sunset-865503.postman.co/workspace/Universidad~310a255d-1378-4326-ab18-ceaa0b3db798/collection/22903412-fee12b11-33b1-4ea7-83b5-16a417c8055c?action=share&source=collection_link&creator=22903412"
+	},
+	"item": [
+		{
+			"name": "Propietario",
+			"item": [
+				{
+					"name": "PostPropietarios",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"nombre\": \"geff\",\r\n    \"identificacion\":\"1152717546\",\r\n    \"direccion\": \"cra 75 # 88a 37\",\r\n    \"tipo\": \"PERSONA\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:4000/propietarios/",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"propietarios",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetPropietarios",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "GetPropietario",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "GetPropietarioByIdentification",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Vehiculo",
+			"item": [
+				{
+					"name": "PostVehiculo",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"placa\": \"CGC10F\",\r\n    \"marca\": \"TVS\",\r\n    \"fecha_matricula\": \"2017-11-02\",\r\n    \"identificacion_propietario\": \"1152717546\"\r\n\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:4000/vehiculos/",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"vehiculos",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetVehiculos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:4000/vehiculos/",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"vehiculos",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Infraccion",
+			"item": [
+				{
+					"name": "PostInfraccion",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"fecha\": \"1999-11-07\",\r\n    \"placa\": \"CGC10E\",\r\n    \"fuente\": \"AGENTE\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:4000/infracciones/",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"infracciones",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetInfracciones",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:4000/infracciones/",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"infracciones",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reportes",
+			"item": [
+				{
+					"name": "GetInfraccionesByPropietarioIdentificacion",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:4000/reportes/infracciones/:identificacion",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"reportes",
+								"infracciones",
+								":identificacion"
+							],
+							"variable": [
+								{
+									"key": "identificacion",
+									"value": "1152717546"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Health",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:4000/health",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"health"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
