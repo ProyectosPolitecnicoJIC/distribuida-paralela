@@ -18,11 +18,8 @@ export default class InfraccionRepository{
     }
 
     async create(infraccion){
-        if(typeof infraccion != Infraccion){
-            throw new Error('Invalid argument. Expected Infraccion.');
-        }
-        return await this.dao.query('INSERT INTO infraccion (fecha, fuente) VALUES (?, ?)', 
-            [infraccion.fecha, infraccion.fuente]);
+        return await this.dao.query('INSERT INTO infraccion (fecha, fuente, vehiculo_id) VALUES (?, ?, ?)', 
+            [infraccion.fecha, infraccion.fuente, infraccion.vehiculoId]);
     }
 
     async update(infraccion){

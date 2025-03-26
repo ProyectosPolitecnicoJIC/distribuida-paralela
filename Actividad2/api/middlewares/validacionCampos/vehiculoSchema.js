@@ -5,7 +5,7 @@ const VehiculoSchema = z.object({
     placa: z.string().min(1).max(10),
     marca: z.string().min(1).max(50),
     fecha_matricula: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // Formato YYYY-MM-DD
-    propietario_id: z.number().int().positive(),
+    identificacion_propietario: z.string().min(1).max(20),
 });
 
 export default VehiculoSchema;
