@@ -12,8 +12,11 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
+    "@graphql-tools/schema": "^10.0.23",
     "api": "file:",
+    "apollo-server-express": "^3.13.0",
     "express": "^4.21.2",
+    "graphql": "^16.10.0",
     "mysql2": "^3.13.0",
     "zod": "^3.24.2"
   },
