@@ -10,7 +10,7 @@ const propietarioRepository = new PropietarioRepository(dbService);
 
 const propietarioRouter = Router();
 
-propietarioRouter.post('/', validate(propietarioSchema) , async (req, res) => {
+propietarioRouter.post('/', validate(propietarioSchema), async (req, res) => {
     const propietario = new Propietario(req.body.identificacion, req.body.nombre, req.body.direccion, req.body.tipo);
     const result = await propietarioRepository.create(propietario);
     res.json(result);
