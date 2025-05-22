@@ -1,0 +1,60 @@
+<div class="container">
+  <mat-card class="book-form-card">
+    <mat-card-header>
+      <mat-card-title>Crear Nuevo Libro</mat-card-title>
+      <mat-card-subtitle>Ingresa los detalles del libro</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="bookForm" (ngSubmit)="onSubmit()" class="book-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Título del Libro</mat-label>
+          <input matInput formControlName="title" placeholder="Ingresa el título">
+          <mat-error *ngIf="bookForm.get('title')?.hasError('required')">
+            El título es requerido
+          </mat-error>
+          <mat-error *ngIf="bookForm.get('title')?.hasError('minlength')">
+            El título debe tener al menos 3 caracteres
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Autor</mat-label>
+          <input matInput formControlName="author" placeholder="Ingresa el nombre del autor">
+          <mat-error *ngIf="bookForm.get('author')?.hasError('required')">
+            El autor es requerido
+          </mat-error>
+          <mat-error *ngIf="bookForm.get('author')?.hasError('minlength')">
+            El nombre del autor debe tener al menos 3 caracteres
+          </mat-error>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="submit" [disabled]="!bookForm.valid">
+          Crear Libro
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+  <div class="books-xml-list-container">
+    <div class="books-xml-list" *ngIf="books.length > 0">
+      <div class="books-header">
+        <h3>Libros en la base de datos (XML):</h3>
+        <button mat-icon-button color="primary" (click)="getBooks()" matTooltip="Actualizar lista">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+      <div *ngFor="let book of books" class="book-xml-item">
+        <pre>{{ jsonToXml(book) }}</pre>
+        <div class="book-actions">
+          <button mat-stroked-button color="primary" (click)="editBook(book)">Editar</button>
+          <button mat-stroked-button color="warn" (click)="deleteBook(book.id)">Eliminar</button>
+        </div>
+      </div>
+    </div>
+    <br>
+    <div class="book-actions">
+      <button mat-stroked-button color="accent" (click)="downloadAsPdf()">Descargar PDF</button>
+    </div>
+  </div>
+  
+</div>

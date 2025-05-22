@@ -6,40 +6,32 @@ const admin = require("firebase-admin");
 
 let adminConfig;
 
-try {
-  // Verificar que las variables de entorno necesarias estén definidas
-  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_DATABASE_URL) {
-    throw new Error("Faltan variables de entorno requeridas. Verifica tu archivo .env");
+if (process.env.NODE_ENV === "production") {
+  // 🔒 Usar credencial por defecto de Cloud Run
+  adminConfig = {
+    credential: admin.credential.applicationDefault(),
+  };
+  console.log("☁️ Usando credencial por defecto (Cloud Run)");
+} else {
+  require("dotenv").config(); // Solo en desarrollo
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT_PATH || !process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_DATABASE_URL) {
+    console.error("Faltan variables de entorno requeridas");
+    process.exit(1);
   }
 
-  if (process.env.NODE_ENV === "production") {
-    adminConfig = {
-      credential: admin.credential.applicationDefault(),
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      databaseURL: process.env.FIREBASE_DATABASE_URL
-    };
-    console.log("☁️ Usando credencial por defecto (GCP)");
-  } else {
-    const serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
-    adminConfig = {
-      credential: admin.credential.cert(serviceAccount),
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      databaseURL: process.env.FIREBASE_DATABASE_URL
-    };
-    console.log("🗝️ Usando clave de servicio local.");
-  }
-} catch (error) {
-  console.error("Error al cargar la configuración de Firebase:", error);
-  process.exit(1);
+  const serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
+  adminConfig = {
+    credential: admin.credential.cert(serviceAccount),
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    databaseURL: process.env.FIREBASE_DATABASE_URL
+  };
+  console.log("🗝️ Usando clave de servicio local");
 }
 
 try {
-  // Verificar si ya hay una app inicializada
-  if (admin.apps.length === 0) {
+  if (!admin.apps.length) {
     admin.initializeApp(adminConfig);
-    console.log("✅ Firebase inicializado correctamente");
-  } else {
-    console.log("ℹ️ Firebase ya estaba inicializado");
+    console.log("✅ Firebase inicializado");
   }
 } catch (error) {
   console.error("Error al inicializar Firebase:", error);
