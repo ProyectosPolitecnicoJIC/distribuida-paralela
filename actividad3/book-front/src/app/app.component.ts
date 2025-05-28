@@ -37,6 +37,21 @@ export class AppComponent {
   bookForm: FormGroup;
   books: any[] = [];
   editingBookId: string | null = null;
+  metrics: {
+    totalBooks: number;
+    authorPercentages: { [key: string]: number };
+    mostProlificAuthor: string;
+    maxBooks: number;
+    averageBooksPerAuthor: number;
+    uniqueAuthors: number;
+  } = {
+    totalBooks: 0,
+    authorPercentages: {},
+    mostProlificAuthor: '',
+    maxBooks: 0,
+    averageBooksPerAuthor: 0,
+    uniqueAuthors: 0
+  };
 
   constructor(
     private fb: FormBuilder,
@@ -55,6 +70,7 @@ export class AppComponent {
       .subscribe({
         next: (books) => {
           this.books = books;
+          this.calculateMetrics();
         },
         error: (error) => {
           this.snackBar.open('Error al obtener los libros', 'Cerrar', {
@@ -64,6 +80,44 @@ export class AppComponent {
           });
         }
       });
+  }
+
+  calculateMetrics() {
+    // Total number of books
+    const totalBooks = this.books.length;
+    
+    // Author statistics
+    const authorCounts: { [key: string]: number } = {};
+    this.books.forEach(book => {
+      authorCounts[book.author] = (authorCounts[book.author] || 0) + 1;
+    });
+
+    // Calculate percentages and find most prolific author
+    const authorPercentages: { [key: string]: number } = {};
+    let mostProlificAuthor = '';
+    let maxBooks = 0;
+
+    Object.entries(authorCounts).forEach(([author, count]) => {
+      const percentage = (count / totalBooks) * 100;
+      authorPercentages[author] = percentage;
+      if (count > maxBooks) {
+        maxBooks = count;
+        mostProlificAuthor = author;
+      }
+    });
+
+    // Calculate average books per author
+    const uniqueAuthors = Object.keys(authorCounts).length;
+    const averageBooksPerAuthor = totalBooks / uniqueAuthors;
+
+    this.metrics = {
+      totalBooks,
+      authorPercentages,
+      mostProlificAuthor,
+      maxBooks,
+      averageBooksPerAuthor,
+      uniqueAuthors
+    };
   }
 
   jsonToXml(book: any): string {
@@ -96,7 +150,23 @@ export class AppComponent {
 
   booksToXml(books: any[]): string {
     const xmlContent = books.map(book => this.jsonToXml(book)).join('\n');
-    const wrappedXmlContent = `<books>\n${xmlContent}\n</books>`;
+    const metricsXml = `
+    <metrics>
+      <totalBooks>${this.metrics.totalBooks}</totalBooks>
+      <uniqueAuthors>${this.metrics.uniqueAuthors}</uniqueAuthors>
+      <averageBooksPerAuthor>${this.metrics.averageBooksPerAuthor.toFixed(2)}</averageBooksPerAuthor>
+      <mostProlificAuthor>
+        <name>${this.metrics.mostProlificAuthor}</name>
+        <bookCount>${this.metrics.maxBooks}</bookCount>
+      </mostProlificAuthor>
+      <authorPercentages>
+        ${Object.entries(this.metrics.authorPercentages)
+          .map(([author, percentage]) => 
+            `<author name="${author}">${(percentage as number).toFixed(2)}%</author>`
+          ).join('\n        ')}
+      </authorPercentages>
+    </metrics>`;
+    const wrappedXmlContent = `<books>\n${xmlContent}\n${metricsXml}\n</books>`;
     return wrappedXmlContent;
   }
 
@@ -214,5 +284,14 @@ export class AppComponent {
     
     // Save the PDF
     doc.save('libros.pdf');
+  }
+
+  getAuthorPercentages(): { name: string; percentage: number }[] {
+    return Object.entries(this.metrics.authorPercentages)
+      .map(([name, percentage]) => ({
+        name,
+        percentage: percentage as number
+      }))
+      .sort((a, b) => b.percentage - a.percentage);
   }
 }

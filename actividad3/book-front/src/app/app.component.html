@@ -35,6 +35,46 @@
       </form>
     </mat-card-content>
   </mat-card>
+
+  <!-- Metrics Card -->
+  <mat-card class="metrics-card">
+    <mat-card-header>
+      <mat-card-title>Métricas de la Biblioteca</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <h3>Total de Libros</h3>
+          <p>{{ metrics.totalBooks }}</p>
+        </div>
+        <div class="metric-item">
+          <h3>Autores Únicos</h3>
+          <p>{{ metrics.uniqueAuthors }}</p>
+        </div>
+        <div class="metric-item">
+          <h3>Promedio de Libros por Autor</h3>
+          <p>{{ metrics.averageBooksPerAuthor.toFixed(2) }}</p>
+        </div>
+        <div class="metric-item">
+          <h3>Autor más Prolífico</h3>
+          <p>{{ metrics.mostProlificAuthor }}</p>
+          <small>{{ metrics.maxBooks }} libros</small>
+        </div>
+      </div>
+      
+      <div class="author-percentages">
+        <h3>Distribución por Autor</h3>
+        <div class="percentage-list">
+          <div *ngFor="let author of getAuthorPercentages()" class="percentage-item">
+            <span class="author-name">{{ author.name }}</span>
+            <mat-progress-bar mode="determinate" [value]="author.percentage"></mat-progress-bar>
+            <span class="percentage-value">{{ author.percentage.toFixed(2) }}%</span>
+          </div>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
   <div class="books-xml-list-container">
     <div class="books-xml-list" *ngIf="books.length > 0">
       <div class="books-header">
