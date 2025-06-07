@@ -1,6 +1,0 @@
-<form [formGroup]="registrationForm" (ngSubmit)="onSubmit()">
-  <label for="username">Username:</label>
-  <input id="username" formControlName="userName" required />
-
-  <button type="submit" [disabled]="registrationForm.invalid">Register</button>
-</form>

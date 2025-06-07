@@ -1,26 +1,23 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { CommonModule } from '@angular/common';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { RegistrationFormComponent } from './components/registration-form/registration-form.component';
-import { GameCanvasComponent } from './components/game-canvas/game-canvas.component';
-import { ReactiveFormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+import { GameComponent } from './components/game/game.component';
+import { WebSocketService } from './services/websocket.service';
 
 @NgModule({
   declarations: [
     AppComponent,
-    RegistrationFormComponent,
-    GameCanvasComponent
+    GameComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
-    ReactiveFormsModule,
     CommonModule
   ],
-  providers: [],
+  providers: [WebSocketService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

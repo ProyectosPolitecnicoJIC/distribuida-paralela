@@ -14,6 +14,12 @@ export class WebSocketService {
     this.socket.next({type: 'create_game', userName})
   }
 
-
+  getWords(): Array<string>  {
+    return [
+      'LARGEWORD',
+      'WORD1',
+      'WORD2',
+    ]
+  }
 
 }

@@ -1,0 +1,47 @@
+<div class="game-container">
+  <div class="game-header">
+    <h1>Sopa de Letras</h1>
+    <div class="scores">
+      <div *ngFor="let score of gameState.scores | keyvalue" class="score-item">
+        <span class="player-name">{{score.key}}:</span>
+        <span class="score-value">{{score.value}} puntos</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-content">
+    <div class="board-container" 
+         (mouseup)="onCellMouseUp()"
+         (mouseleave)="onCellMouseUp()">
+      <div class="board">
+        <div *ngFor="let row of gameState.board; let i = index" class="board-row">
+          <div *ngFor="let cell of row; let j = index" 
+               class="board-cell"
+               [class.selected]="isCellSelected(i, j)"
+               [class.found]="isCellFound(i, j)"
+               (mousedown)="onCellMouseDown(i, j)"
+               (mouseenter)="onCellMouseEnter(i, j)">
+            {{cell}}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="words-container">
+      <h2>Palabras a encontrar:</h2>
+      <div class="words-list">
+        <div *ngFor="let word of gameState.words" 
+             class="word-item"
+             [class.found]="isWordFound(word)">
+          {{word}}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-footer">
+    <button class="new-game-btn" (click)="requestNewGame()">
+      Nuevo Juego
+    </button>
+  </div>
+</div> 
