@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
-import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { BehaviorSubject, Observable, Subject, timer } from 'rxjs';
+import { map, retryWhen, tap, delayWhen } from 'rxjs/operators';
 
 export interface GameState {
   gameId: string;
@@ -38,6 +38,8 @@ export class WebSocketService {
   private gameList = new BehaviorSubject<GameInfo[]>([]);
   private reconnect$ = new Subject<void>();
   private readonly STORAGE_KEY = 'wordSearchGame';
+  private readonly WS_URL = 'ws://localhost:3000';
+  private isConnected = false;
 
   constructor() {
     console.log('Initializing WebSocket connection...');
@@ -57,9 +59,9 @@ export class WebSocketService {
           words: gameState.words,
           foundWords: gameState.foundWords
         });
-        // Reconnect to the game
-        if (gameState.playerName) {
-          this.joinGame(gameState.playerName);
+        // Reconnect to the game with gameId
+        if (gameState.playerName && gameState.gameId) {
+          this.joinGame(gameState.playerName, gameState.gameId);
         }
       } catch (error) {
         console.error('Error loading stored game:', error);
@@ -79,52 +81,78 @@ export class WebSocketService {
   }
 
   private connect() {
-    this.socket$ = webSocket('ws://localhost:3000');
-    this.socket$.subscribe(
-      (message) => {
-        console.log('Received message:', message);
-        switch (message.type) {
-          case 'gameStart':
-            console.log('Game started:', message);
-            const newState = {
-              gameId: message.gameId,
-              words: message.words,
-              foundWords: [],
-              board: []
-            };
-            this.gameState.next(newState);
-            this.storeGameState(newState, this.getStoredPlayerName());
-            break;
-          case 'wordFound':
-            console.log('Word found:', message);
-            const currentState = this.gameState.value;
-            const updatedState = {
-              ...currentState,
-              foundWords: message.foundWords
-            };
-            this.gameState.next(updatedState);
-            this.storeGameState(updatedState, this.getStoredPlayerName());
-            break;
-          case 'gameList':
-            console.log('Game list updated:', message);
-            this.gameList.next(message.games);
-            break;
+    if (!this.socket$ || this.socket$.closed) {
+      this.socket$ = webSocket({
+        url: this.WS_URL,
+        openObserver: {
+          next: () => {
+            console.log('WebSocket connected');
+            this.isConnected = true;
+            // Rejoin game if we have a stored player name and gameId
+            const stored = localStorage.getItem(this.STORAGE_KEY);
+            if (stored) {
+              const gameState = JSON.parse(stored);
+              if (gameState.playerName && gameState.gameId) {
+                this.joinGame(gameState.playerName, gameState.gameId);
+              }
+            }
+          }
         }
-      },
-      (err) => {
-        console.error('WebSocket error:', err);
-        setTimeout(() => this.reconnect$.next(), 5000);
-      },
-      () => {
-        console.log('WebSocket connection closed');
-        setTimeout(() => this.reconnect$.next(), 5000);
-      }
-    );
+      });
 
-    this.reconnect$.subscribe(() => {
-      console.log('Attempting to reconnect...');
-      this.connect();
-    });
+      this.socket$.pipe(
+        retryWhen(errors =>
+          errors.pipe(
+            tap(err => {
+              console.error('WebSocket error:', err);
+              this.isConnected = false;
+            }),
+            delayWhen(() => timer(5000))
+          )
+        )
+      ).subscribe(
+        (message) => {
+          console.log('Received message:', message);
+          switch (message.type) {
+            case 'gameStart':
+              console.log('Game started:', message);
+              const newState = {
+                gameId: message.gameId,
+                words: message.words,
+                foundWords: [],
+                board: []
+              };
+              this.gameState.next(newState);
+              this.storeGameState(newState, this.getStoredPlayerName());
+              break;
+            case 'wordFound':
+              console.log('Word found:', message);
+              const currentState = this.gameState.value;
+              const updatedState = {
+                ...currentState,
+                foundWords: message.foundWords
+              };
+              this.gameState.next(updatedState);
+              this.storeGameState(updatedState, this.getStoredPlayerName());
+              break;
+            case 'gameList':
+              console.log('Game list updated:', message);
+              this.gameList.next(message.games);
+              break;
+          }
+        },
+        (err) => {
+          console.error('WebSocket error:', err);
+          this.isConnected = false;
+          setTimeout(() => this.connect(), 5000);
+        },
+        () => {
+          console.log('WebSocket connection closed');
+          this.isConnected = false;
+          setTimeout(() => this.connect(), 5000);
+        }
+      );
+    }
   }
 
   private getStoredPlayerName(): string {
@@ -150,14 +178,26 @@ export class WebSocketService {
     );
   }
 
-  joinGame(playerName: string) {
-    console.log('Joining game with player name:', playerName);
-    this.socket$.next({ type: 'join', playerName });
+  joinGame(playerName: string, gameId?: string) {
+    console.log('Joining game with player name:', playerName, 'gameId:', gameId);
+    const payload: any = { type: 'join', playerName };
+    if (gameId) payload.gameId = gameId;
+    if (this.isConnected) {
+      this.socket$.next(payload);
+    } else {
+      this.connect();
+      setTimeout(() => {
+        if (this.isConnected) {
+          this.socket$.next(payload);
+        }
+      }, 1000);
+    }
   }
 
   sendWordFound(word: string) {
     console.log('Sending word found:', word);
-    if (this.gameState.value.words.includes(word) && 
+    if (this.isConnected && 
+        this.gameState.value.words.includes(word) && 
         !this.gameState.value.foundWords.includes(word)) {
       this.socket$.next({ type: 'wordFound', word });
     }
@@ -165,7 +205,9 @@ export class WebSocketService {
 
   requestNewGame() {
     console.log('Requesting new game');
-    this.socket$.next({ type: 'newGame' });
+    if (this.isConnected) {
+      this.socket$.next({ type: 'newGame' });
+    }
   }
 
   clearStoredGame() {
@@ -176,6 +218,7 @@ export class WebSocketService {
     if (this.socket$) {
       this.socket$.complete();
     }
+    this.isConnected = false;
     this.clearStoredGame();
     this.gameState.next({
       gameId: '',

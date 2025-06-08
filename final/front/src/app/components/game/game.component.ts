@@ -51,6 +51,19 @@ export class GameComponent implements OnInit, OnDestroy {
   ngOnInit() {
     console.log('Game component initialized');
     
+    // Ya no llamo joinGame automáticamente aquí, solo cargo el nombre si existe
+    const storedGame = localStorage.getItem('wordSearchGame');
+    if (storedGame) {
+      try {
+        const gameState = JSON.parse(storedGame);
+        if (gameState.playerName) {
+          this.playerName = gameState.playerName;
+        }
+      } catch (error) {
+        console.error('Error loading stored game:', error);
+      }
+    }
+    
     // Subscribe to game state updates
     const gameStateSub = this.wsService.getGameState().subscribe(state => {
       console.log('Game state updated:', state);
@@ -131,7 +144,15 @@ export class GameComponent implements OnInit, OnDestroy {
   joinGame() {
     if (this.playerName.trim()) {
       console.log('Joining game with player name:', this.playerName);
-      this.wsService.joinGame(this.playerName);
+      // Store player name in localStorage
+      const storedGame = localStorage.getItem('wordSearchGame');
+      let gameState = storedGame ? JSON.parse(storedGame) : {};
+      gameState.playerName = this.playerName;
+      localStorage.setItem('wordSearchGame', JSON.stringify(gameState));
+
+      // PASA EL gameId SI EXISTE
+      const gameId = gameState.gameId;
+      this.wsService.joinGame(this.playerName, gameId);
     }
   }
 
@@ -356,16 +377,32 @@ export class GameComponent implements OnInit, OnDestroy {
     return this.gameState.foundWords.includes(word);
   }
 
-  requestNewGame() {
-    this.wsService.requestNewGame();
+  async requestNewGame() {
+    // Desconectar primero
+    this.wsService.disconnect();
+    this.selectedCells = [];
+    this.foundWords = [];
+    this.gameList = [];
+    this.cdr.detectChanges();
+    // Esperar un poco para asegurar cierre de socket
+    await new Promise(res => setTimeout(res, 300));
+    // Volver a unirse con el mismo usuario
+    if (this.playerName.trim()) {
+      this.wsService.joinGame(this.playerName);
+    }
   }
 
   disconnect() {
     this.wsService.disconnect();
     this.playerName = '';
-    this.selectedCells = [];
+    localStorage.removeItem('wordSearchGame');
+    this.gameState = {
+      gameId: '',
+      words: [],
+      foundWords: [],
+      board: []
+    };
     this.foundWords = [];
-    this.gameList = [];
-    this.cdr.detectChanges();
+    this.selectedCells = [];
   }
 } 

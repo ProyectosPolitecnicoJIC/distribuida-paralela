@@ -43,6 +43,25 @@ function createGame(playerName) {
     return game;
 }
 
+// Helper: Cierra conexiones previas del mismo usuario
+function closePreviousConnection(playerName, currentWs) {
+    for (const [client, info] of players.entries()) {
+        if (info.playerName === playerName && client !== currentWs) {
+            try { client.close(); } catch {}
+            players.delete(client);
+        }
+    }
+}
+
+// Helper: Elimina juegos previos del mismo usuario
+function removeGamesByPlayer(playerName) {
+    for (const [gameId, game] of games.entries()) {
+        if (game.playerName === playerName) {
+            games.delete(gameId);
+        }
+    }
+}
+
 wss.on('connection', (ws) => {
     console.log('New WebSocket connection established');
     let currentPlayer = null;
@@ -54,22 +73,40 @@ wss.on('connection', (ws) => {
 
         switch (data.type) {
             case 'join':
-                console.log('Player joining:', data.playerName);
-                // Handle player joining
+                console.log('Player joining:', data.playerName, 'gameId:', data.gameId);
                 currentPlayer = data.playerName;
-                currentGame = createGame(currentPlayer);
-                players.set(ws, { playerName: currentPlayer, gameId: currentGame.id });
-                
-                // Send initial game data
-                const gameStartMessage = {
-                    type: 'gameStart',
-                    gameId: currentGame.id,
-                    words: currentGame.words
-                };
-                console.log('Sending game start message:', gameStartMessage);
-                ws.send(JSON.stringify(gameStartMessage));
+                closePreviousConnection(currentPlayer, ws);
 
-                // Broadcast updated game list to all clients
+                // Si se va a crear un juego nuevo, elimina juegos viejos de este usuario
+                if (!(data.gameId && games.has(data.gameId))) {
+                    removeGamesByPlayer(currentPlayer);
+                }
+
+                // Si se envía un gameId y existe, reconectar a ese juego
+                if (data.gameId && games.has(data.gameId)) {
+                    currentGame = games.get(data.gameId);
+                    players.set(ws, { playerName: currentPlayer, gameId: currentGame.id });
+                    // Enviar datos del juego existente
+                    const gameStartMessage = {
+                        type: 'gameStart',
+                        gameId: currentGame.id,
+                        words: currentGame.words
+                    };
+                    console.log('Reconnected to existing game:', gameStartMessage);
+                    ws.send(JSON.stringify(gameStartMessage));
+                } else {
+                    // Si no, crear un juego nuevo
+                    currentGame = createGame(currentPlayer);
+                    players.set(ws, { playerName: currentPlayer, gameId: currentGame.id });
+                    const gameStartMessage = {
+                        type: 'gameStart',
+                        gameId: currentGame.id,
+                        words: currentGame.words
+                    };
+                    console.log('Sending new game start message:', gameStartMessage);
+                    ws.send(JSON.stringify(gameStartMessage));
+                }
+
                 broadcastGameList();
                 break;
 
