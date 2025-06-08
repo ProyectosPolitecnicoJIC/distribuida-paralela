@@ -1,47 +1,54 @@
-<div class="game-container">
-  <div class="game-header">
-    <h1>Sopa de Letras</h1>
-    <div class="scores">
-      <div *ngFor="let score of gameState.scores | keyvalue" class="score-item">
-        <span class="player-name">{{score.key}}:</span>
-        <span class="score-value">{{score.value}} puntos</span>
-      </div>
-    </div>
+<!-- Player Name Input -->
+<div class="player-input" *ngIf="!gameState.gameId">
+  <input type="text" [(ngModel)]="playerName" placeholder="Enter your name" />
+  <button (click)="joinGame()" [disabled]="!playerName.trim()">Join Game</button>
+</div>
+
+<!-- Game Board -->
+<div class="game-container" *ngIf="gameState.gameId">
+  <div class="game-info">
+    <h2>Word Search Game</h2>
+    <div class="player-info">Player: {{playerName}}</div>
+    <div class="game-id">Game ID: {{gameState.gameId}}</div>
   </div>
 
-  <div class="game-content">
-    <div class="board-container" 
+  <div class="board-container">
+    <div class="board" 
          (mouseup)="onCellMouseUp()"
          (mouseleave)="onCellMouseUp()">
-      <div class="board">
-        <div *ngFor="let row of gameState.board; let i = index" class="board-row">
-          <div *ngFor="let cell of row; let j = index" 
-               class="board-cell"
-               [class.selected]="isCellSelected(i, j)"
-               [class.found]="isCellFound(i, j)"
-               (mousedown)="onCellMouseDown(i, j)"
-               (mouseenter)="onCellMouseEnter(i, j)">
-            {{cell}}
-          </div>
+      <div class="row" *ngFor="let row of gameState.board; let i = index">
+        <div class="cell" 
+             *ngFor="let cell of row; let j = index"
+             [class.selected]="isCellSelected(i, j)"
+             [class.found]="isCellFound(i, j)"
+             (mousedown)="onCellMouseDown(i, j)"
+             (mouseenter)="onCellMouseEnter(i, j)">
+          {{cell}}
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="words-container">
-      <h2>Palabras a encontrar:</h2>
-      <div class="words-list">
-        <div *ngFor="let word of gameState.words" 
-             class="word-item"
-             [class.found]="isWordFound(word)">
+  <div class="game-controls">
+    <div class="word-list">
+      <h3>Words to Find:</h3>
+      <ul>
+        <li *ngFor="let word of gameState.words" 
+            [class.found]="isWordFound(word)">
           {{word}}
-        </div>
-      </div>
+        </li>
+      </ul>
     </div>
+    <button (click)="requestNewGame()">New Game</button>
   </div>
+</div>
 
-  <div class="game-footer">
-    <button class="new-game-btn" (click)="requestNewGame()">
-      Nuevo Juego
-    </button>
-  </div>
+<!-- Game List -->
+<div class="game-list" *ngIf="gameList.length > 0">
+  <h3>Active Games</h3>
+  <ul>
+    <li *ngFor="let game of gameList">
+      {{game.playerName}} - Found: {{game.foundWords}}/{{game.totalWords}} words
+    </li>
+  </ul>
 </div> 

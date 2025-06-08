@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { WebSocketService, GameState } from '../../services/websocket.service';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { WebSocketService, GameState, GameInfo } from '../../services/websocket.service';
+import { Subscription } from 'rxjs';
 
 interface Position {
   row: number;
@@ -17,7 +18,7 @@ interface FoundWord {
   templateUrl: './game.component.html',
   styleUrls: ['./game.component.css']
 })
-export class GameComponent implements OnInit {
+export class GameComponent implements OnInit, OnDestroy {
   gameState: GameState;
   selectedCells: { row: number; col: number }[] = [];
   isSelecting = false;
@@ -31,32 +32,107 @@ export class GameComponent implements OnInit {
     [1, 1],   // diagonal derecha abajo
     [1, -1],  // diagonal izquierda abajo
   ];
+  gameList: GameInfo[] = [];
+  playerName: string = '';
+  private subscriptions: Subscription[] = [];
 
-  constructor(private wsService: WebSocketService) {
+  constructor(
+    private wsService: WebSocketService,
+    private cdr: ChangeDetectorRef
+  ) {
     this.gameState = {
-      words: [
-        "apple",
-        "banana",
-        "cherry",
-        "date",
-        "elderberry",
-        "fig",
-        "grape",
-      ],
+      gameId: '',
+      words: [],
       foundWords: [],
-      scores: {},
       board: []
     };
-    this.generateBoard();
   }
 
   ngOnInit() {
-    this.wsService.getGameState().subscribe(state => {
+    console.log('Game component initialized');
+    
+    // Subscribe to game state updates
+    const gameStateSub = this.wsService.getGameState().subscribe(state => {
+      console.log('Game state updated:', state);
       this.gameState = state;
-      if (state.board.length === 0) {
+      if (state.board.length === 0 && state.words.length > 0) {
+        console.log('Generating board with words:', state.words);
         this.generateBoard();
       }
+      // Update found words cells
+      this.updateFoundWordsCells();
+      this.cdr.detectChanges();
     });
+
+    // Subscribe to game list updates
+    const gameListSub = this.wsService.getGameList().subscribe(games => {
+      console.log('Game list updated:', games);
+      this.gameList = [...games];
+      this.cdr.detectChanges();
+    });
+
+    this.subscriptions.push(gameStateSub, gameListSub);
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+  }
+
+  private updateFoundWordsCells() {
+    this.foundWords = [];
+    for (const word of this.gameState.foundWords) {
+      const cells = this.findWordCells(word);
+      if (cells.length > 0) {
+        this.foundWords.push({ word, cells });
+      }
+    }
+  }
+
+  private findWordCells(word: string): { row: number; col: number }[] {
+    const cells: { row: number; col: number }[] = [];
+    const board = this.gameState.board;
+    
+    for (let row = 0; row < board.length; row++) {
+      for (let col = 0; col < board[row].length; col++) {
+        for (const direction of this.DIRECTIONS) {
+          const foundCells = this.checkWordAtPosition(word, row, col, direction);
+          if (foundCells.length > 0) {
+            return foundCells;
+          }
+        }
+      }
+    }
+    
+    return cells;
+  }
+
+  private checkWordAtPosition(word: string, startRow: number, startCol: number, direction: [number, number]): { row: number; col: number }[] {
+    const cells: { row: number; col: number }[] = [];
+    const board = this.gameState.board;
+    
+    for (let i = 0; i < word.length; i++) {
+      const row = startRow + (direction[0] * i);
+      const col = startCol + (direction[1] * i);
+      
+      if (row < 0 || row >= board.length || col < 0 || col >= board[0].length) {
+        return [];
+      }
+      
+      if (board[row][col] !== word[i]) {
+        return [];
+      }
+      
+      cells.push({ row, col });
+    }
+    
+    return cells;
+  }
+
+  joinGame() {
+    if (this.playerName.trim()) {
+      console.log('Joining game with player name:', this.playerName);
+      this.wsService.joinGame(this.playerName);
+    }
   }
 
   private calculateBoardSize(): number {
@@ -75,6 +151,7 @@ export class GameComponent implements OnInit {
   }
 
   private generateBoard(): void {
+    console.log('Starting board generation');
     const boardSize = this.calculateBoardSize();
     console.log('Board size:', boardSize, 'Words:', this.gameState.words);
     
@@ -87,14 +164,15 @@ export class GameComponent implements OnInit {
       .sort((a, b) => b.length - a.length)
       .map(word => word.toUpperCase());
     
+    console.log('Sorted words:', sortedWords);
+    
     // Intentar colocar cada palabra
     for (const word of sortedWords) {
       let placed = false;
       let attempts = 0;
-      const maxAttempts = 1000; // Aumentamos significativamente los intentos
+      const maxAttempts = 1000;
       
       while (!placed && attempts < maxAttempts) {
-        // Intentar colocar la palabra en una posición aleatoria
         const row = Math.floor(Math.random() * boardSize);
         const col = Math.floor(Math.random() * boardSize);
         const direction = this.DIRECTIONS[Math.floor(Math.random() * this.DIRECTIONS.length)];
@@ -102,18 +180,20 @@ export class GameComponent implements OnInit {
         if (this.canPlaceWord(board, word, row, col, direction)) {
           this.placeWord(board, word, row, col, direction);
           placed = true;
+          console.log('Placed word:', word);
         }
         attempts++;
       }
       
-      // Si no se pudo colocar aleatoriamente, hacer una búsqueda exhaustiva
       if (!placed) {
+        console.log('Could not place word:', word, 'trying exhaustive search');
         for (let row = 0; row < boardSize && !placed; row++) {
           for (let col = 0; col < boardSize && !placed; col++) {
             for (const direction of this.DIRECTIONS) {
               if (this.canPlaceWord(board, word, row, col, direction)) {
                 this.placeWord(board, word, row, col, direction);
                 placed = true;
+                console.log('Placed word in exhaustive search:', word);
                 break;
               }
             }
@@ -123,11 +203,10 @@ export class GameComponent implements OnInit {
         }
       }
       
-      // Si aún no se pudo colocar, aumentar el tamaño del tablero y reintentar
       if (!placed) {
         console.log('Could not place word:', word, 'increasing board size');
-        this.gameState.board = []; // Limpiar el tablero actual
-        this.generateBoard(); // Recursión con tablero más grande
+        this.gameState.board = [];
+        this.generateBoard();
         return;
       }
     }
@@ -141,6 +220,7 @@ export class GameComponent implements OnInit {
       }
     }
     
+    console.log('Board generation completed');
     this.gameState.board = board;
     this.foundWords = [];
   }
@@ -248,24 +328,18 @@ export class GameComponent implements OnInit {
     if (this.isSelecting) {
       this.isSelecting = false;
       const word = this.getSelectedWord();
-      if (word && this.gameState.words.includes(word.toLowerCase())) {
+      if (word && this.gameState.words.includes(word) && !this.gameState.foundWords.includes(word)) {
+        console.log('Word found:', word);
         this.wsService.sendWordFound(word);
-        // Guardar las celdas de la palabra encontrada
-        this.foundWords.push({
-          word: word.toLowerCase(),
-          cells: [...this.selectedCells]
-        });
       }
       this.selectedCells = [];
-      this.startCell = null;
     }
   }
 
   private getSelectedWord(): string {
     return this.selectedCells
       .map(cell => this.gameState.board[cell.row][cell.col])
-      .join('')
-      .toUpperCase();
+      .join('');
   }
 
   isCellSelected(row: number, col: number): boolean {
@@ -279,11 +353,10 @@ export class GameComponent implements OnInit {
   }
 
   isWordFound(word: string): boolean {
-    return this.foundWords.some(foundWord => foundWord.word === word.toLowerCase());
+    return this.gameState.foundWords.includes(word);
   }
 
   requestNewGame() {
-    this.generateBoard();
     this.wsService.requestNewGame();
   }
 } 
