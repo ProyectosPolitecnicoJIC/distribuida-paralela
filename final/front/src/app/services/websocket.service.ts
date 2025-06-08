@@ -171,4 +171,19 @@ export class WebSocketService {
   clearStoredGame() {
     localStorage.removeItem(this.STORAGE_KEY);
   }
+
+  disconnect() {
+    if (this.socket$) {
+      this.socket$.complete();
+    }
+    this.clearStoredGame();
+    this.gameState.next({
+      gameId: '',
+      words: [],
+      foundWords: [],
+      board: []
+    });
+    this.gameList.next([]);
+    console.log('WebSocket disconnected and state cleared.');
+  }
 } 

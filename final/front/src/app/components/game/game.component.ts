@@ -359,4 +359,13 @@ export class GameComponent implements OnInit, OnDestroy {
   requestNewGame() {
     this.wsService.requestNewGame();
   }
+
+  disconnect() {
+    this.wsService.disconnect();
+    this.playerName = '';
+    this.selectedCells = [];
+    this.foundWords = [];
+    this.gameList = [];
+    this.cdr.detectChanges();
+  }
 } 

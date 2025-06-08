@@ -1,3 +1,8 @@
+<!-- Botón de desconexión -->
+<div style="display: flex; justify-content: flex-end; margin-bottom: 10px;" *ngIf="gameState.gameId">
+  <button (click)="disconnect()" style="background: #e53935;">Desconectar</button>
+</div>
+
 <!-- Player Name Input -->
 <div class="player-input" *ngIf="!gameState.gameId">
   <input type="text" [(ngModel)]="playerName" placeholder="Enter your name" />
