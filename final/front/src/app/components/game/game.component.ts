@@ -61,70 +61,115 @@ export class GameComponent implements OnInit {
 
   private calculateBoardSize(): number {
     const longestWord = Math.max(...this.gameState.words.map(word => word.length));
-    return Math.max(longestWord + this.BOARD_PADDING, this.MIN_BOARD_SIZE);
+    const numWords = this.gameState.words.length;
+    
+    // Calculamos un tamaño mínimo basado en la palabra más larga
+    const minSize = longestWord + 2;
+    
+    // Calculamos un tamaño basado en el número de palabras
+    // Asumimos que necesitamos al menos 2 espacios por palabra
+    const wordsBasedSize = Math.ceil(Math.sqrt(numWords * 2));
+    
+    // Tomamos el máximo de ambos cálculos y añadimos un margen
+    return Math.max(minSize, wordsBasedSize) + 2;
   }
 
-  private generateBoard() {
+  private generateBoard(): void {
     const boardSize = this.calculateBoardSize();
-    const board = this.createEmptyBoard(boardSize);
-    const sortedWords = [...this.gameState.words].sort((a, b) => b.length - a.length);
+    console.log('Board size:', boardSize, 'Words:', this.gameState.words);
+    
+    // Crear tablero vacío
+    const board = Array(boardSize).fill(null)
+      .map(() => Array(boardSize).fill(null));
+    
+    // Ordenar palabras por longitud (más largas primero)
+    const sortedWords = [...this.gameState.words]
+      .sort((a, b) => b.length - a.length)
+      .map(word => word.toUpperCase());
     
     // Intentar colocar cada palabra
     for (const word of sortedWords) {
-      this.placeWordOnBoard(board, word.toUpperCase());
-    }
-
-    this.gameState.board = board;
-    this.foundWords = []; // Resetear palabras encontradas al generar nuevo tablero
-  }
-
-  private createEmptyBoard(size: number): string[][] {
-    return Array(size).fill(null)
-      .map(() => Array(size).fill(null)
-        .map(() => this.getRandomLetter()));
-  }
-
-  private placeWordOnBoard(board: string[][], word: string) {
-    const boardSize = board.length;
-    let placed = false;
-    let attempts = 0;
-    const maxAttempts = 50;
-
-    while (!placed && attempts < maxAttempts) {
-      const row = Math.floor(Math.random() * (boardSize - word.length));
-      const col = Math.floor(Math.random() * (boardSize - word.length));
-      const direction = this.DIRECTIONS[Math.floor(Math.random() * this.DIRECTIONS.length)];
-
-      if (this.canPlaceWord(board, word, row, col, direction)) {
-        this.placeWord(board, word, row, col, direction);
-        placed = true;
+      let placed = false;
+      let attempts = 0;
+      const maxAttempts = 1000; // Aumentamos significativamente los intentos
+      
+      while (!placed && attempts < maxAttempts) {
+        // Intentar colocar la palabra en una posición aleatoria
+        const row = Math.floor(Math.random() * boardSize);
+        const col = Math.floor(Math.random() * boardSize);
+        const direction = this.DIRECTIONS[Math.floor(Math.random() * this.DIRECTIONS.length)];
+        
+        if (this.canPlaceWord(board, word, row, col, direction)) {
+          this.placeWord(board, word, row, col, direction);
+          placed = true;
+        }
+        attempts++;
       }
-      attempts++;
+      
+      // Si no se pudo colocar aleatoriamente, hacer una búsqueda exhaustiva
+      if (!placed) {
+        for (let row = 0; row < boardSize && !placed; row++) {
+          for (let col = 0; col < boardSize && !placed; col++) {
+            for (const direction of this.DIRECTIONS) {
+              if (this.canPlaceWord(board, word, row, col, direction)) {
+                this.placeWord(board, word, row, col, direction);
+                placed = true;
+                break;
+              }
+            }
+            if (placed) break;
+          }
+          if (placed) break;
+        }
+      }
+      
+      // Si aún no se pudo colocar, aumentar el tamaño del tablero y reintentar
+      if (!placed) {
+        console.log('Could not place word:', word, 'increasing board size');
+        this.gameState.board = []; // Limpiar el tablero actual
+        this.generateBoard(); // Recursión con tablero más grande
+        return;
+      }
     }
-
-    if (!placed) {
-      const row = Math.floor(Math.random() * (boardSize - word.length));
-      const col = Math.floor(Math.random() * (boardSize - word.length));
-      const direction = this.DIRECTIONS[Math.floor(Math.random() * this.DIRECTIONS.length)];
-      this.placeWord(board, word, row, col, direction);
+    
+    // Rellenar espacios vacíos con letras aleatorias
+    for (let i = 0; i < boardSize; i++) {
+      for (let j = 0; j < boardSize; j++) {
+        if (board[i][j] === null) {
+          board[i][j] = this.getRandomLetter();
+        }
+      }
     }
+    
+    this.gameState.board = board;
+    this.foundWords = [];
   }
 
   private canPlaceWord(board: string[][], word: string, row: number, col: number, direction: [number, number]): boolean {
     const boardSize = board.length;
     
+    // Verificar que la palabra quepa en el tablero
+    const endRow = row + (direction[0] * (word.length - 1));
+    const endCol = col + (direction[1] * (word.length - 1));
+    
+    if (endRow < 0 || endRow >= boardSize || endCol < 0 || endCol >= boardSize) {
+      return false;
+    }
+    
+    // Verificar que no haya conflictos con otras letras
     for (let i = 0; i < word.length; i++) {
       const newRow = row + (direction[0] * i);
       const newCol = col + (direction[1] * i);
-
-      if (newRow < 0 || newRow >= boardSize || newCol < 0 || newCol >= boardSize) {
-        return false;
+      
+      // Si la celda está vacía o tiene la misma letra, es válida
+      if (board[newRow][newCol] === null || board[newRow][newCol] === word[i]) {
+        continue;
       }
-
-      if (board[newRow][newCol] !== null && board[newRow][newCol] !== word[i]) {
-        return false;
-      }
+      
+      // Si hay una letra diferente, no podemos colocar la palabra aquí
+      return false;
     }
+    
     return true;
   }
 
